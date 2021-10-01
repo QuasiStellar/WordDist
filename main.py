@@ -1,35 +1,39 @@
-words = []
-with open("word_rus.txt", encoding="utf-8") as file:
-    for line in file:
-        words.append(line[:-1])
-print(len(words))
+import pygtrie
+import networkx
+import matplotlib.pyplot as plt
+from networkx_viewer import Viewer
+
+ALPHABET = "alphabet_rus.txt"
+WORD_LIST = "word_rus.txt"
+
+with open(ALPHABET, encoding="utf-8") as file:
+    alphabet = {char: pos for pos, char in enumerate(file.read())}
+
+words = pygtrie.CharTrie()
+with open(WORD_LIST, encoding="utf-8") as file:
+    for word in file:
+        words[word[:-1] + "!"] = True
+
 graph = []
 
 
-def close(w1, w2):
-    if abs(len(w1) - len(w2)) > 1:
-        return False
-    if len(w1) == len(w2):
-        dist = 0
-        for ch in range(len(w1)):
-            if w1[ch] != w2[ch]:
-                dist += 1
-                if dist > 1:
-                    return False
-        return True
-    if len(w1) > len(w2):
-        if w1[1:] == w2 or w1[:-1] == w2:
-            return True
-        return False
-    else:
-        if w2[1:] == w1 or w2[:-1] == w1:
-            return True
-        return False
+def neighbours(string):
+    strings = set()
+    for i in range(len(string) - 1):
+        for letter in alphabet:
+            strings.add(string[:i] + letter + string[i:])
+            if alphabet[letter] > alphabet[string[i]]:
+                strings.add(string[:i] + letter + string[i + 1:])
+    for letter in alphabet:
+        strings.add(string[:-1] + letter + '!')
+    return strings
 
 
-for i in range(len(words)):
-    for j in range(i + 1, len(words)):
-        if close(words[i], words[j]):
-            graph.append((words[i], words[j]))
+for word in words:
+    for neighbour in neighbours(word):
+        if words.has_node(neighbour):
+            graph.append((word[:-1], neighbour[:-1]))
 
-print(graph)
+with open('graph.txt', 'w', encoding="utf-8") as file:
+    for edge in graph:
+        file.write(edge[0] + ' ' + edge[1] + '\n')
